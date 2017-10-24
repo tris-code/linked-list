@@ -8,83 +8,130 @@
  * See CONTRIBUTORS.txt for the list of the project authors
  */
 
-public struct ListEntry<T> {
+public struct ListEntry<T>: ListEntryProtocol {
     public var payload: T
-    public private(set) lazy var next: UnsafeMutablePointer<ListEntry> = UnsafeMutablePointer(&self)
-    public private(set) lazy var prev: UnsafeMutablePointer<ListEntry> = UnsafeMutablePointer(&self)
+    public var next: UnsafeMutablePointer<ListEntry>
+    public var prev: UnsafeMutablePointer<ListEntry>
 
-    var originalPointer: UnsafeMutablePointer<ListEntry> {
-        mutating get {
+    var pointer: UnsafeMutablePointer<ListEntry> {
+        @inline(__always) get {
             return self.next.pointee.prev
         }
     }
 
-    public init(payload: T) {
+    public init(payload: T, pointer: UnsafeMutablePointer<ListEntry>) {
         self.payload = payload
+        self.next = pointer
+        self.prev = pointer
+    }
+}
+
+// FIXME:
+// We need to hide next/prev setters, but it's not possible with a protocol.
+// And we can't use generic ListEntry<T> as a constrain.
+
+public protocol ListEntryProtocol {
+    associatedtype Payload
+    var payload: Payload { get }
+    var next: UnsafeMutablePointer<Self> { get set }
+    var prev: UnsafeMutablePointer<Self> { get set }
+    init(payload: Payload, pointer: UnsafeMutablePointer<Self>)
+}
+
+extension UnsafeMutablePointer where Pointee: ListEntryProtocol {
+    public var payload: Pointee.Payload {
+        @inline(__always) get {
+            return pointee.payload
+        }
     }
 
-    mutating func create() {
-        next = UnsafeMutablePointer(&self)
-        prev = UnsafeMutablePointer(&self)
+    public var next: UnsafeMutablePointer<Pointee> {
+        @inline(__always) get {
+            return pointee.next
+        }
+        @inline(__always) nonmutating set {
+            pointee.next = newValue
+        }
     }
 
-    public mutating func remove() {
-        prev.pointee.next = next
-        next.pointee.prev = prev
-        create()
+    public var prev: UnsafeMutablePointer<Pointee> {
+        @inline(__always) get {
+            return pointee.prev
+        }
+        @inline(__always) nonmutating set {
+            pointee.prev = newValue
+        }
     }
 
-    public mutating func insert(_ item: UnsafeMutablePointer<ListEntry>) {
-        item.pointee.prev = UnsafeMutablePointer(&self)
-        item.pointee.next = next
-        item.pointee.next.pointee.prev = item
-        item.pointee.prev.pointee.next = item
+    public static func allocate(
+        payload: Pointee.Payload
+    ) -> UnsafeMutablePointer<Pointee> {
+        let pointer = UnsafeMutablePointer<Pointee>.allocate(capacity: 1)
+        pointer.initialize(to: Pointee(payload: payload, pointer: pointer))
+        return pointer
     }
 
-    public mutating func append(_ item: UnsafeMutablePointer<ListEntry>) {
-        item.pointee.next = UnsafeMutablePointer(&self)
-        item.pointee.prev = prev
-        item.pointee.next.pointee.prev = item
-        item.pointee.prev.pointee.next = item
+    public func deallocate() {
+        remove()
+        self.deallocate(capacity: 1)
     }
 
-    public var first: UnsafeMutablePointer<ListEntry>? {
-        var head = self
-        if head.isEmpty {
+    public func remove() {
+        prev.next = next
+        next.prev = prev
+        next = self
+        prev = self
+    }
+
+    public func insert(_ item: UnsafeMutablePointer<Pointee>) {
+        item.prev = self
+        item.next = next
+        item.next.prev = item
+        item.prev.next = item
+    }
+
+    public func append(_ item: UnsafeMutablePointer<Pointee>) {
+        item.next = self
+        item.prev = prev
+        item.next.prev = item
+        item.prev.next = item
+    }
+
+    public var first: UnsafeMutablePointer<Pointee>? {
+        guard !isEmpty else {
             return nil
         }
-        return head.next
+        return next
     }
 
-    public var last: UnsafeMutablePointer<ListEntry>? {
-        var head = self
-        if head.isEmpty {
+    public var last: UnsafeMutablePointer<Pointee>? {
+        guard !isEmpty else {
             return nil
         }
-        return head.prev
+        return prev
     }
 
-    public mutating func removeFirst() -> UnsafeMutablePointer<ListEntry> {
+    public func removeFirst() -> UnsafeMutablePointer<Pointee> {
         let result = next
-        next.pointee.remove()
+        next.remove()
         return result
     }
 
-    public mutating func removeLast() -> UnsafeMutablePointer<ListEntry> {
+    public func removeLast() -> UnsafeMutablePointer<Pointee> {
         let result = prev
-        prev.pointee.remove()
+        prev.remove()
         return result
     }
 
-    public mutating func popFirst() -> UnsafeMutablePointer<ListEntry>? {
-        if isEmpty {
+    public func popFirst() -> UnsafeMutablePointer<Pointee>? {
+        guard !isEmpty else {
             return nil
         }
         return removeFirst()
     }
 
-    public mutating func popLast() -> UnsafeMutablePointer<ListEntry>? {
-        if isEmpty {
+    public func popLast() -> UnsafeMutablePointer<Pointee>? {
+        guard !isEmpty else {
             return nil
         }
         return removeLast()
@@ -93,9 +140,8 @@ public struct ListEntry<T> {
     // NOTE:
     // 11x faster than default
     public var isEmpty: Bool {
-        @inline(never)
-        mutating get {
-            return next == next.pointee.prev
+        @inline(never) get {
+            return next == self
         }
     }
 
@@ -103,20 +149,11 @@ public struct ListEntry<T> {
     // default implementation is broken
     public var count: Int{
         var count = 0
-        var copy = self
-        let head = copy.originalPointer
-        var next = copy.next
-        while next != head {
+        var current = self.next
+        while current != self {
             count += 1
-            next = next.pointee.next
+            current = current.next
         }
         return count
-    }
-
-    // for the tests
-    var isOriginal: Bool {
-        mutating get {
-            return next.pointee.prev == UnsafeMutablePointer(&self)
-        }
     }
 }

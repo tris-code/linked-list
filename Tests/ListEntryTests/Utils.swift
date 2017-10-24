@@ -8,22 +8,32 @@
  * See CONTRIBUTORS.txt for the list of the project authors
  */
 
-@testable import ListEntry
+import ListEntry
 
-func allocateList(head: UnsafeMutablePointer<ListEntry<Int>>, count: Int) -> [UnsafeMutablePointer<Container>] {
-    var items = [UnsafeMutablePointer<Container>]()
-    for i in 1...count {
-        let container = UnsafeMutablePointer<Container>.allocate(capacity: 1)
-        container.initialize(to: Container(id: i))
-        head.pointee.append(UnsafeMutablePointer(&container.pointee.entry))
-        items.append(container)
+struct Container {
+    var id: Int
+    var entry: UnsafeMutablePointer<ListEntry<Int>>
+
+    init(id: Int) {
+        self.id = id
+        entry = UnsafeMutablePointer<ListEntry>.allocate(payload: id)
     }
-    return items
 }
 
-func deallocateList(items: [UnsafeMutablePointer<Container>]) {
-    for item in items {
-        item.pointee.entry.remove()
-        item.deallocate(capacity: 1)
+extension Array where Element == Container {
+    init(head: UnsafeMutablePointer<ListEntry<Int>>, count: Int) {
+        var items = [Container]()
+        for i in 1...count {
+            let container = Container(id: i)
+            head.append(container.entry)
+            items.append(container)
+        }
+        self = items
+    }
+
+    func deallocate() {
+        for item in self {
+            item.entry.deallocate()
+        }
     }
 }

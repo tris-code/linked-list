@@ -11,99 +11,82 @@
 import XCTest
 @testable import ListEntry
 
-struct Container {
-    var id: Int
-    var entry: ListEntry<Int>
-
-    init(id: Int) {
-        self.id = id
-        entry = ListEntry(payload: id)
-    }
-}
-
 class ListEntryTests: XCTestCase {
     func testList() {
-        let head = ListEntry(payload: 0)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
         XCTAssertNotNil(head)
     }
 
     func testEmpty() {
-        var head = ListEntry(payload: 0)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
         XCTAssertTrue(head.isEmpty)
 
-        var c = Container(id: 1)
+        let c = Container(id: 1)
         XCTAssertTrue(c.entry.isEmpty)
 
-        head.insert(&c.entry)
+        head.insert(c.entry)
         XCTAssertFalse(c.entry.isEmpty)
     }
 
     func testInitialization() {
-        var head = ListEntry(payload: 0)
-        var container = Container(id: 1)
-        head.insert(&container.entry)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
+        let container = Container(id: 1)
 
-        XCTAssert(head.next == UnsafeMutablePointer(&container.entry))
-        XCTAssert(head.prev == UnsafeMutablePointer(&container.entry))
-        XCTAssert(container.entry.next == UnsafeMutablePointer(&head))
-        XCTAssert(container.entry.prev == UnsafeMutablePointer(&head))
+        head.insert(container.entry)
+
+        XCTAssert(head.next == container.entry)
+        XCTAssert(head.prev == container.entry)
+        XCTAssert(container.entry.next == head)
+        XCTAssert(container.entry.prev == head)
 
         XCTAssert(head.next.pointee.payload == container.id)
     }
 
-    func testOriginal() {
-        var head = ListEntry(payload: 0)
-        var container = Container(id: 1)
-        // wrong initialization
-        XCTAssertTrue(head.isOriginal)
-        XCTAssertTrue(container.entry.isOriginal)
-
-        // don't copy the list items. never.
-        var headCopy = head
-        var containerCopy = container
-        XCTAssertFalse(headCopy.isOriginal)
-        XCTAssertFalse(containerCopy.entry.isOriginal)
-    }
-
     func testInsert() {
-        var head = ListEntry(payload: 0)
-        var first = Container(id: 1)
-        var second = Container(id: 2)
-        head.insert(&first.entry)
-        head.insert(&second.entry)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
+        let first = Container(id: 1)
+        let second = Container(id: 2)
+        head.insert(first.entry)
+        head.insert(second.entry)
 
-        XCTAssert(head.next == UnsafeMutablePointer(&second.entry))
-        XCTAssert(head.next.pointee.next == UnsafeMutablePointer(&first.entry))
+        XCTAssert(head.next == second.entry)
+        XCTAssert(head.next.next == first.entry)
 
-        XCTAssert(head.prev == UnsafeMutablePointer(&first.entry))
-        XCTAssert(head.prev.pointee.prev == UnsafeMutablePointer(&second.entry))
+        XCTAssert(head.prev == first.entry)
+        XCTAssert(head.prev.prev == second.entry)
 
-        XCTAssert(head.next.pointee.payload == 2)
-        XCTAssert(head.prev.pointee.payload == 1)
+        XCTAssert(head.next.payload == 2)
+        XCTAssert(head.prev.payload == 1)
     }
 
     func testAppend() {
-        var head = ListEntry(payload: 0)
-        var first = Container(id: 1)
-        var second = Container(id: 2)
-        head.append(&first.entry)
-        head.append(&second.entry)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
+        let first = Container(id: 1)
+        let second = Container(id: 2)
+        head.append(first.entry)
+        head.append(second.entry)
 
-        XCTAssert(head.next == UnsafeMutablePointer(&first.entry))
-        XCTAssert(head.next.pointee.next == UnsafeMutablePointer(&second.entry))
+        XCTAssert(head.next == first.entry)
+        XCTAssert(head.next.pointee.next == second.entry)
 
-        XCTAssert(head.prev == UnsafeMutablePointer(&second.entry))
-        XCTAssert(head.prev.pointee.prev == UnsafeMutablePointer(&first.entry))
+        XCTAssert(head.prev == second.entry)
+        XCTAssert(head.prev.pointee.prev == first.entry)
 
         XCTAssert(head.next.pointee.payload == 1)
         XCTAssert(head.prev.pointee.payload == 2)
     }
 
     func testRemove() {
-        var head = ListEntry(payload: 0)
-        var container = Container(id: 1)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
+        let container = Container(id: 1)
 
-        head.insert(&container.entry)
+        head.insert(container.entry)
 
         XCTAssertFalse(head.isEmpty)
         XCTAssertFalse(container.entry.isEmpty)
@@ -115,25 +98,27 @@ class ListEntryTests: XCTestCase {
     }
 
     func testFirst() {
-        var head = ListEntry(payload: 0)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
         XCTAssertNil(head.first)
 
-        var items = allocateList(head: &head, count: 2)
-        defer { deallocateList(items: items) }
+        let items = [Container](head: head, count: 2)
+        defer { items.deallocate() }
 
         guard let first = head.first else {
             XCTFail("first item is nil")
             return
         }
-        XCTAssertEqual(first.pointee.payload, 1)
+        XCTAssertEqual(first.payload, 1)
     }
 
     func testLast() {
-        var head = ListEntry(payload: 0)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
         XCTAssertNil(head.last)
 
-        var items = allocateList(head: &head, count: 2)
-        defer { deallocateList(items: items) }
+        let items = [Container](head: head, count: 2)
+        defer { items.deallocate() }
 
         guard let last = head.last else {
             XCTFail("last item is nil")
@@ -142,11 +127,11 @@ class ListEntryTests: XCTestCase {
         XCTAssertEqual(last.pointee.payload, 2)
     }
 
-
     func testRemoveFirst() {
-        var head = ListEntry(payload: 0)
-        var items = allocateList(head: &head, count: 2)
-        defer { deallocateList(items: items) }
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
+        let items = [Container](head: head, count: 2)
+        defer { items.deallocate() }
 
         let removedFirst = head.removeFirst()
         let removedSecond = head.removeFirst()
@@ -157,9 +142,10 @@ class ListEntryTests: XCTestCase {
     }
 
     func testRemoveLast() {
-        var head = ListEntry(payload: 0)
-        var items = allocateList(head: &head, count: 2)
-        defer { deallocateList(items: items) }
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
+        let items = [Container](head: head, count: 2)
+        defer { items.deallocate() }
 
         let removedSecond = head.removeLast()
         let removedFirst = head.removeLast()
@@ -170,9 +156,10 @@ class ListEntryTests: XCTestCase {
     }
 
     func testPopFirst() {
-        var head = ListEntry(payload: 0)
-        var items = allocateList(head: &head, count: 10)
-        defer { deallocateList(items: items) }
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
+        let items = [Container](head: head, count: 10)
+        defer { items.deallocate() }
 
         var id = 0
         while let item = head.popFirst() {
@@ -185,9 +172,10 @@ class ListEntryTests: XCTestCase {
     }
 
     func testPopLast() {
-        var head = ListEntry(payload: 0)
-        var items = allocateList(head: &head, count: 10)
-        defer { deallocateList(items: items) }
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
+        let items = [Container](head: head, count: 10)
+        defer { items.deallocate() }
 
         var id = 10
         while let item = head.popLast() {
@@ -204,7 +192,6 @@ class ListEntryTests: XCTestCase {
         ("testList", testList),
         ("testEmpty", testEmpty),
         ("testInitialization", testInitialization),
-        ("testOriginal", testOriginal),
         ("testInsert", testInsert),
         ("testAppend", testAppend),
         ("testRemove", testRemove),

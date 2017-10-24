@@ -8,14 +8,13 @@
  * See CONTRIBUTORS.txt for the list of the project authors
  */
 
+// TODO: Contitional conformance would be really great
+// extension UnsafeMutablePointer: Sequence where Pointee: ListEntryProtocol
+
 extension ListEntry: Sequence {
     public typealias Iterator = ListEntryIterator<T>
     public func makeIterator() -> ListEntryIterator<T> {
-        // NOTE:
-        // can't implement mutating makeIterator
-        // so we make a copy, and get self pointer through next->prev
-        var head = self
-        return ListEntryIterator<T>(head: head.originalPointer)
+        return ListEntryIterator<T>(head: pointer)
     }
 }
 

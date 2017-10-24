@@ -8,18 +8,14 @@
  * See CONTRIBUTORS.txt for the list of the project authors
  */
 
-import Foundation
-
 extension ListEntry: BidirectionalCollection {
     public typealias Index = UnsafeMutablePointer<ListEntry<T>>
     public var startIndex: Index {
-        var head = self
-        return head.next
+        return pointer.next
     }
 
     public var endIndex: Index {
-        var head = self
-        return head.originalPointer
+        return pointer
     }
 
     public subscript(position: Index) -> UnsafeMutablePointer<ListEntry<T>> {

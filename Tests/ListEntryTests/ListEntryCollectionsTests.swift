@@ -13,47 +13,51 @@ import XCTest
 
 class ListEntryCollectionsTests: XCTestCase {
     func testSequence() {
-        var head = ListEntry(payload: 0)
-        var first = Container(id: 1)
-        var second = Container(id: 2)
-        head.append(&first.entry)
-        head.append(&second.entry)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
 
-        var i = 1
-        for item in head {
-            XCTAssert(item.pointee.payload == i)
+        let items = [Container](head: head, count: 10)
+        defer { items.deallocate() }
+
+        var i = 0
+        for item in head.pointee {
             i += 1
+            XCTAssert(item.pointee.payload == i)
         }
 
-        XCTAssert(i == 3)
+        XCTAssertEqual(i, 10)
     }
 
     func testCollection() {
-        var head = ListEntry(payload: 0)
-        var items = allocateList(head: &head, count: 10)
-        defer { deallocateList(items: items) }
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
+
+        let items = [Container](head: head, count: 10)
+        defer { items.deallocate() }
 
         var i = 0
-        var index = head.startIndex
-        while index < head.endIndex {
+        var index = head.pointee.startIndex
+        while index != head.pointee.endIndex {
             i += 1
-            XCTAssert(head[index].pointee.payload == i)
-            index = head.index(after: index)
+            XCTAssert(head.pointee[index].pointee.payload == i)
+            index = head.pointee.index(after: index)
         }
 
         XCTAssertEqual(i, 10)
     }
 
     func testBidirectionalCollection() {
-        var head = ListEntry(payload: 0)
-        var items = allocateList(head: &head, count: 10)
-        defer { deallocateList(items: items) }
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
+
+        let items = [Container](head: head, count: 10)
+        defer { items.deallocate() }
 
         var i = 10
-        var index = head.index(before: head.endIndex)
-        while index < head.endIndex {
-            XCTAssert(head[index].pointee.payload == i)
-            index = head.index(before: index)
+        var index = head.pointee.index(before: head.pointee.endIndex)
+        while index != head.pointee.endIndex {
+            XCTAssert(head.pointee[index].pointee.payload == i)
+            index = head.pointee.index(before: index)
             i -= 1
         }
 
@@ -61,10 +65,11 @@ class ListEntryCollectionsTests: XCTestCase {
     }
 
     func testEmptySequence() {
-        let head = ListEntry(payload: 0)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
 
         var i = 0
-        for _ in head {
+        for _ in head.pointee {
             i += 1
         }
 
@@ -72,10 +77,11 @@ class ListEntryCollectionsTests: XCTestCase {
     }
 
     func testEmptyCollection() {
-        let head = ListEntry(payload: 0)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
 
         var i = 0
-        for _ in head.indices {
+        for _ in head.pointee.indices {
             i += 1
         }
 
@@ -83,25 +89,27 @@ class ListEntryCollectionsTests: XCTestCase {
     }
 
     func testCount() {
-        var head = ListEntry(payload: 0)
-        var first = Container(id: 1)
-        var second = Container(id: 2)
-        head.append(&first.entry)
-        head.append(&second.entry)
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
 
-        XCTAssertEqual(head.count, 2)
+        let items = [Container](head: head, count: 10)
+        defer { items.deallocate() }
+
+        XCTAssertEqual(head.count, 10)
     }
 
     func testSlice() {
-        var head = ListEntry(payload: 0)
-        let items = allocateList(head: &head, count: 10)
-        defer { deallocateList(items: items) }
+        var head = UnsafeMutablePointer<ListEntry>.allocate(payload: 0)
+        defer { head.deallocate() }
+
+        let items = [Container](head: head, count: 10)
+        defer { items.deallocate() }
 
         var slice = items.prefix(upTo: items.count)
 
         var id = 10
         while let last = slice.popLast() {
-            XCTAssert(last.pointee.id == id)
+            XCTAssert(last.id == id)
             id -= 1
         }
 
