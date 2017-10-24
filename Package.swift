@@ -16,8 +16,13 @@ let package = Package(
     products: [
         .library(name: "LinkedList", targets: ["ListEntry"])
     ],
+    dependencies: [
+        .package(
+            url: "https://github.com/tris-foundation/test.git",
+            from: "0.4.0")
+    ],
     targets: [
         .target(name: "ListEntry"),
-        .testTarget(name: "ListEntryTests", dependencies: ["ListEntry"])
+        .testTarget(name: "ListEntryTests", dependencies: ["ListEntry", "Test"])
     ]
 )
