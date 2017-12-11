@@ -23,6 +23,8 @@ let package = Package(
     ],
     targets: [
         .target(name: "ListEntry"),
-        .testTarget(name: "ListEntryTests", dependencies: ["ListEntry", "Test"])
+        .testTarget(
+            name: "ListEntryTests",
+            dependencies: ["ListEntry", "Test"])
     ]
 )
