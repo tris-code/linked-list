@@ -176,20 +176,4 @@ class ListEntryTests: TestCase {
         assertEqual(id, 0)
         assertTrue(head.isEmpty)
     }
-
-
-    static var allTests = [
-        ("testList", testList),
-        ("testEmpty", testEmpty),
-        ("testInitialization", testInitialization),
-        ("testInsert", testInsert),
-        ("testAppend", testAppend),
-        ("testRemove", testRemove),
-        ("testFirst", testFirst),
-        ("testLast", testLast),
-        ("testRemoveFirst", testRemoveFirst),
-        ("testRemoveLast", testRemoveLast),
-        ("testPopFirst", testPopFirst),
-        ("testPopLast", testPopLast),
-    ]
 }

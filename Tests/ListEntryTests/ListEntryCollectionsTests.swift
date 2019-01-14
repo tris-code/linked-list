@@ -107,15 +107,4 @@ class ListEntryCollectionsTests: TestCase {
         assertTrue(slice.isEmpty)
         assertFalse(head.isEmpty)
     }
-
-
-    static var allTests = [
-        ("testSequence", testSequence),
-        ("testCollection", testCollection),
-        ("testBidirectionalCollection", testBidirectionalCollection),
-        ("testEmptySequence", testEmptySequence),
-        ("testEmptyCollection", testEmptyCollection),
-        ("testCount", testCount),
-        ("testSlice", testSlice),
-    ]
 }
