@@ -7,7 +7,7 @@ let package = Package(
         .library(name: "LinkedList", targets: ["ListEntry"])
     ],
     dependencies: [
-        .package(path: "../Test")
+        .package(path: "../test")
     ],
     targets: [
         .target(name: "ListEntry"),
